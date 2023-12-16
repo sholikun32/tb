@@ -122,3 +122,27 @@ if uploaded_file is not None:
         st.write(f'Accuracy: {accuracy_score(y_test, y_pred):.2f}')
         st.write('Classification Report')
         st.write(classification_report(y_test, y_pred))
+        
+        st.header('Prediction by Region based on Clusters')
+        region_cluster_mapping = {}
+        unique_regions = df_imputed['Region'].unique()
+        
+        for region in unique_regions:
+            st.subheader(f'Prediction for {region}')
+            region_data = df_imputed[df_imputed['Region'] == region].drop(columns=['Region'])
+            region_pca = pca.transform(region_data)
+            region_cluster = kmeans.predict(region_pca)
+            region_cluster_mapping[region] = region_cluster[0]
+            
+            st.write(f'The cluster for {region} is: {region_cluster[0]}')
+            
+        if st.checkbox('Predict using Cluster Labels'):
+            selected_region = st.selectbox('Select a region to predict', unique_regions)
+            prediction_cluster = region_cluster_mapping[selected_region]
+            
+            st.write(f'Predicted cluster for {selected_region} is: {prediction_cluster}')
+            
+            # Filter data for the predicted cluster
+            cluster_data = pca_df[pca_df['Cluster'] == prediction_cluster].drop(columns=['Cluster'])
+            st.write('Data in the predicted cluster:')
+            st.write(cluster_data.head())
