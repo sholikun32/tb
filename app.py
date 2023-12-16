@@ -125,11 +125,11 @@ if uploaded_file is not None:
         
         st.header('Prediction by Region based on Clusters')
         region_cluster_mapping = {}
-        unique_regions = df_imputed['Region'].unique()
+        unique_regions = df_imputed['Kecamatan'].unique()
         
         for region in unique_regions:
             st.subheader(f'Prediction for {region}')
-            region_data = df_imputed[df_imputed['Region'] == region].drop(columns=['Region'])
+            region_data = df_imputed[df_imputed['Kecamatan'] == region].drop(columns=['Kecamatan'])
             region_pca = pca.transform(region_data)
             region_cluster = kmeans.predict(region_pca)
             region_cluster_mapping[region] = region_cluster[0]
