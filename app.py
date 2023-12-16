@@ -63,9 +63,18 @@ if uploaded_file is not None:
         st.write('PCA Result')
         st.write(pca_df.head())
         
-        # Visualize PCA result
+        st.subheader('PCA Visualization Options')
+        visualization_option = st.radio("Select PCA Visualization Type", ('Scatter Plot', 'Heatmap'))
+        
+        # Visualize PCA result based on user choice
         st.subheader('PCA Visualization')
-        plt.figure(figsize=(8, 6))
-        sns.scatterplot(x=pca_df.columns[0], y=pca_df.columns[1], data=pca_df)
-        plt.title('PCA Visualization')
-        st.pyplot(plt)
+        if visualization_option == 'Scatter Plot':
+            plt.figure(figsize=(8, 6))
+            sns.scatterplot(x=pca_df.columns[0], y=pca_df.columns[1], data=pca_df)
+            plt.title('PCA Scatter Plot')
+            st.pyplot(plt)
+        elif visualization_option == 'Heatmap':
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(pca_df.corr(), annot=True, cmap='coolwarm')
+            plt.title('PCA Correlation Heatmap')
+            st.pyplot(plt)
