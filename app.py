@@ -5,6 +5,8 @@ import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 # Function to load data
 @st.cache
@@ -15,7 +17,7 @@ def load_data(uploaded_file):
     return None
 
 # Streamlit code for TB data processing and visualization
-st.title('TB Data Processing and Visualization')
+st.title('TB Data Processing, Visualization, and PCA Analysis')
 
 # Upload file
 uploaded_file = st.file_uploader('Choose a file')
@@ -46,3 +48,22 @@ if uploaded_file is not None:
         sns.histplot(df_imputed[column_to_plot], kde=True, ax=ax)
         ax.set_title('Histogram of ' + column_to_plot)
         st.pyplot(fig)
+        
+        st.header('PCA Analysis')
+        numerical_data = df_imputed.select_dtypes(include=['float64', 'int64'])
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(numerical_data)
+        
+        pca = PCA(n_components=2)  # You can choose the number of principal components
+        pca_result = pca.fit_transform(scaled_data)
+        
+        pca_df = pd.DataFrame(data=pca_result, columns=['PC1', 'PC2'])
+        st.write('PCA Result')
+        st.write(pca_df.head())
+        
+        # Visualize PCA result
+        st.subheader('PCA Visualization')
+        plt.figure(figsize=(8, 6))
+        sns.scatterplot(x='PC1', y='PC2', data=pca_df)
+        plt.title('PCA Visualization')
+        st.pyplot(plt)
