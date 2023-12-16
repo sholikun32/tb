@@ -3,14 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
 
 # Function to load data
 @st.cache
@@ -20,8 +16,8 @@ def load_data(uploaded_file):
         return df
     return None
 
-# Streamlit code for TB data processing, visualization, PCA analysis, clustering, modeling, and evaluation
-st.title('TB Data Processing, Visualization, PCA Analysis, Clustering, Modeling, and Evaluation')
+# Streamlit code for TB data processing, visualization, PCA analysis, clustering, and prediction
+st.title('TB Data Processing, Visualization, PCA Analysis, Clustering, and Prediction')
 
 # Upload file
 uploaded_file = st.file_uploader('Choose a file')
@@ -30,9 +26,6 @@ if uploaded_file is not None:
     if data is not None:
         st.write('Raw Data')
         st.write(data)
-        
-        st.header('Data Overview')
-        st.write(data.head())
         
         st.header('Data Preprocessing')
         imputer = SimpleImputer(strategy='most_frequent')
@@ -100,49 +93,36 @@ if uploaded_file is not None:
             plt.title('Cluster Visualization')
             st.pyplot(plt)
         
-        st.header('Modeling and Evaluation')
-        target_column = st.selectbox('Select the target column for modeling', df_imputed.columns)
-        
-        X = df_imputed.drop(columns=[target_column])
-        y = df_imputed[target_column]
-        
-        model_option = st.selectbox('Select a model', ('Logistic Regression', 'Random Forest'))
-        
-        if model_option == 'Logistic Regression':
-            model = LogisticRegression()
-        else:
-            model = RandomForestClassifier(n_estimators=100)
-        
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        
-        st.write('Model Evaluation Metrics')
-        st.write(f'Accuracy: {accuracy_score(y_test, y_pred):.2f}')
-        st.write('Classification Report')
-        st.write(classification_report(y_test, y_pred))
-        
-        st.header('Prediction by Region based on Clusters')
-        region_cluster_mapping = {}
-        unique_regions = df_imputed['Kecamatan'].unique()
-        
-        for region in unique_regions:
-            st.subheader(f'Prediction for {region}')
-            region_data = df_imputed[df_imputed['Kecamatan'] == region].drop(columns=['Kecamatan'])
-            region_pca = pca.transform(region_data)
-            region_cluster = kmeans.predict(region_pca)
-            region_cluster_mapping[region] = region_cluster[0]
+        st.header('Prediction by District')
+        selected_features = st.multiselect('Select features for prediction', df_imputed.columns)
+        if len(selected_features) > 0:
+            X_selected = df_imputed[selected_features]
+
+            scaler_selected = StandardScaler()
+            scaled_data_selected = scaler_selected.fit_transform(X_selected)
             
-            st.write(f'The cluster for {region} is: {region_cluster[0]}')
+            pca_selected = PCA(n_components=2)
+            pca_result_selected = pca_selected.fit_transform(scaled_data_selected)
             
-        if st.checkbox('Predict using Cluster Labels'):
-            selected_region = st.selectbox('Select a region to predict', unique_regions)
-            prediction_cluster = region_cluster_mapping[selected_region]
+            pca_columns_selected = [f'PC{i+1}' for i in range(2)]
+            pca_df_selected = pd.DataFrame(data=pca_result_selected, columns=pca_columns_selected)
             
-            st.write(f'Predicted cluster for {selected_region} is: {prediction_cluster}')
+            st.write('PCA Result for Selected Features')
+            st.write(pca_df_selected.head())
             
-            # Filter data for the predicted cluster
-            cluster_data = pca_df[pca_df['Cluster'] == prediction_cluster].drop(columns=['Cluster'])
-            st.write('Data in the predicted cluster:')
-            st.write(cluster_data.head())
+            st.header('District Prediction using K-Means')
+            num_clusters_selected = st.slider('Select the number of clusters for KMeans', min_value=2, max_value=10, value=3)
+            kmeans_selected = KMeans(n_clusters=num_clusters_selected)
+            kmeans_selected.fit(pca_df_selected)
+            
+            cluster_labels_selected = kmeans_selected.labels_
+            pca_df_selected['Predicted District'] = cluster_labels_selected
+            
+            st.write('Prediction Results by District')
+            st.write(pca_df_selected.head())
+            
+            if st.checkbox('Show Predicted District Visualization'):
+                plt.figure(figsize=(8, 6))
+                sns.scatterplot(x=pca_df_selected.columns[0], y=pca_df_selected.columns[1], hue='Predicted District', data=pca_df_selected, palette='viridis')
+                plt.title('Predicted District Visualization')
+                st.pyplot(plt)
