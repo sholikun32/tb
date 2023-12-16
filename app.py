@@ -8,6 +8,9 @@ from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
 
 # Function to load data
 @st.cache
@@ -17,8 +20,8 @@ def load_data(uploaded_file):
         return df
     return None
 
-# Streamlit code for TB data processing, visualization, PCA analysis, and clustering
-st.title('TB Data Processing, Visualization, PCA Analysis, and Clustering')
+# Streamlit code for TB data processing, visualization, PCA analysis, clustering, modeling, and evaluation
+st.title('TB Data Processing, Visualization, PCA Analysis, Clustering, Modeling, and Evaluation')
 
 # Upload file
 uploaded_file = st.file_uploader('Choose a file')
@@ -97,13 +100,25 @@ if uploaded_file is not None:
             plt.title('Cluster Visualization')
             st.pyplot(plt)
         
-        if st.checkbox('Label Clusters'):
-            cluster_labels_input = st.text_input('Enter labels for clusters separated by commas (e.g., "Cluster 1,Cluster 2,Cluster 3")')
-            cluster_labels_list = [label.strip() for label in cluster_labels_input.split(',')]
-            
-            if len(cluster_labels_list) == num_clusters:
-                pca_df['Cluster'] = pca_df['Cluster'].map({i: label for i, label in enumerate(cluster_labels_list)})
-                st.write('Cluster labels applied:')
-                st.write(pca_df.head())
-            else:
-                st.warning(f'Please provide {num_clusters} labels for each cluster.')
+        st.header('Modeling and Evaluation')
+        target_column = st.selectbox('Select the target column for modeling', df_imputed.columns)
+        
+        X = df_imputed.drop(columns=[target_column])
+        y = df_imputed[target_column]
+        
+        model_option = st.selectbox('Select a model', ('Logistic Regression', 'Random Forest'))
+        
+        if model_option == 'Logistic Regression':
+            model = LogisticRegression()
+        else:
+            model = RandomForestClassifier(n_estimators=100)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        
+        st.write('Model Evaluation Metrics')
+        st.write(f'Accuracy: {accuracy_score(y_test, y_pred):.2f}')
+        st.write('Classification Report')
+        st.write(classification_report(y_test, y_pred))
