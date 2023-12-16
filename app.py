@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
 
 # Function to load data
 @st.cache
@@ -16,8 +17,8 @@ def load_data(uploaded_file):
         return df
     return None
 
-# Streamlit code for TB data processing, visualization, and PCA analysis
-st.title('TB Data Processing, Visualization, and PCA Analysis')
+# Streamlit code for TB data processing, visualization, PCA analysis, and clustering
+st.title('TB Data Processing, Visualization, PCA Analysis, and Clustering')
 
 # Upload file
 uploaded_file = st.file_uploader('Choose a file')
@@ -78,3 +79,31 @@ if uploaded_file is not None:
             sns.heatmap(pca_df.corr(), annot=True, cmap='coolwarm')
             plt.title('PCA Correlation Heatmap')
             st.pyplot(plt)
+        
+        st.header('Clustering')
+        num_clusters = st.slider('Select the number of clusters for KMeans', min_value=2, max_value=10, value=3)
+        kmeans = KMeans(n_clusters=num_clusters)
+        kmeans.fit(pca_df)
+        
+        cluster_labels = kmeans.labels_
+        pca_df['Cluster'] = cluster_labels
+        
+        st.write('Clustering Results')
+        st.write(pca_df.head())
+        
+        if st.checkbox('Show Cluster Visualization'):
+            plt.figure(figsize=(8, 6))
+            sns.scatterplot(x=pca_df.columns[0], y=pca_df.columns[1], hue='Cluster', data=pca_df, palette='viridis')
+            plt.title('Cluster Visualization')
+            st.pyplot(plt)
+        
+        if st.checkbox('Label Clusters'):
+            cluster_labels_input = st.text_input('Enter labels for clusters separated by commas (e.g., "Cluster 1,Cluster 2,Cluster 3")')
+            cluster_labels_list = [label.strip() for label in cluster_labels_input.split(',')]
+            
+            if len(cluster_labels_list) == num_clusters:
+                pca_df['Cluster'] = pca_df['Cluster'].map({i: label for i, label in enumerate(cluster_labels_list)})
+                st.write('Cluster labels applied:')
+                st.write(pca_df.head())
+            else:
+                st.warning(f'Please provide {num_clusters} labels for each cluster.')
