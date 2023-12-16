@@ -16,7 +16,7 @@ def load_data(uploaded_file):
         return df
     return None
 
-# Streamlit code for TB data processing and visualization
+# Streamlit code for TB data processing, visualization, and PCA analysis
 st.title('TB Data Processing, Visualization, and PCA Analysis')
 
 # Upload file
@@ -54,16 +54,18 @@ if uploaded_file is not None:
         scaler = StandardScaler()
         scaled_data = scaler.fit_transform(numerical_data)
         
-        pca = PCA(n_components=2)  # You can choose the number of principal components
+        num_components = st.slider('Select the number of PCA components', min_value=2, max_value=min(len(numerical_data.columns), 10), value=2)
+        pca = PCA(n_components=num_components)
         pca_result = pca.fit_transform(scaled_data)
         
-        pca_df = pd.DataFrame(data=pca_result, columns=['PC1', 'PC2'])
+        pca_columns = [f'PC{i+1}' for i in range(num_components)]
+        pca_df = pd.DataFrame(data=pca_result, columns=pca_columns)
         st.write('PCA Result')
         st.write(pca_df.head())
         
         # Visualize PCA result
         st.subheader('PCA Visualization')
         plt.figure(figsize=(8, 6))
-        sns.scatterplot(x='PC1', y='PC2', data=pca_df)
+        sns.scatterplot(x=pca_df.columns[0], y=pca_df.columns[1], data=pca_df)
         plt.title('PCA Visualization')
         st.pyplot(plt)
